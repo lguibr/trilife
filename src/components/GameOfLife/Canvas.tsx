@@ -52,7 +52,7 @@ export const Canvas: React.FC<CanvasProps> = React.memo(({ gridConfig, runtimeCo
       // Simulation step
       const interval = 1000 / currentRuntime.fps;
       const deltaTime = time - lastTime;
-      
+
       if (currentRuntime.isPlaying && deltaTime > interval) {
         state = updateSimulation(state, gridConfig);
         lastTime = time - (deltaTime % interval);
@@ -93,9 +93,9 @@ export const Canvas: React.FC<CanvasProps> = React.memo(({ gridConfig, runtimeCo
       mouseRef.current.x = e.clientX;
       mouseRef.current.y = e.clientY;
     };
-    const handleMouseDown = (e: MouseEvent) => { 
-      updateMouse(e); 
-      mouseRef.current.isDown = true; 
+    const handleMouseDown = (e: MouseEvent) => {
+      updateMouse(e);
+      mouseRef.current.isDown = true;
       mouseRef.current.button = e.button;
     };
     const handleMouseUp = () => { mouseRef.current.isDown = false; };
@@ -103,12 +103,36 @@ export const Canvas: React.FC<CanvasProps> = React.memo(({ gridConfig, runtimeCo
     const handleMouseLeave = () => { mouseRef.current.isDown = false; mouseRef.current.x = -1000; };
     const handleContextMenu = (e: MouseEvent) => { e.preventDefault(); };
 
+    const updateTouch = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        mouseRef.current.x = e.touches[0].clientX;
+        mouseRef.current.y = e.touches[0].clientY;
+      }
+    };
+    const handleTouchStart = (e: TouchEvent) => {
+      updateTouch(e);
+      mouseRef.current.isDown = true;
+      mouseRef.current.button = 0;
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.cancelable) e.preventDefault();
+      updateTouch(e);
+    };
+    const handleTouchEnd = () => {
+      mouseRef.current.isDown = false;
+      mouseRef.current.x = -1000;
+    };
+
     window.addEventListener('resize', handleResize);
     canvas.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseleave', handleMouseLeave);
     canvas.addEventListener('contextmenu', handleContextMenu);
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd);
+    canvas.addEventListener('touchcancel', handleTouchEnd);
 
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -117,6 +141,10 @@ export const Canvas: React.FC<CanvasProps> = React.memo(({ gridConfig, runtimeCo
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
       canvas.removeEventListener('contextmenu', handleContextMenu);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+      canvas.removeEventListener('touchcancel', handleTouchEnd);
       cancelAnimationFrame(animationFrameId);
     };
   }, [gridConfig]); // ONLY re-run when gridConfig changes
